@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pookie Catventure — Halloween Hunt</title>
+<link rel="stylesheet" href="style.css" />
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<!-- UMD build so double-clicking index.html via file:// works (no modules / no server needed) -->
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+</head>
+<body>
+<div id="game-wrap"></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="pill"><span class="dot dot-green"></span>Catnip <span id="catnip">0</span>/10</div>
+  <div class="pill"><span class="dot dot-blue"></span>Tuna <span id="tuna">0</span>/10</div>
+  <div class="pill">Health <span id="hp">5</span>/5</div>
+  <div class="pill">Mice <span id="mice">0</span></div>
+  <div class="pill vol-pill"><label for="vol">Vol</label><input id="vol" type="range" min="0" max="100" value="70"><span id="volval">70</span></div>
+</div>
+
+<div id="toast"></div>
+<div id="err" class="hidden"></div>
+<div id="prompt">Click to play — WASD walk &middot; SHIFT sneak &middot; SPACE jump &middot; M meow &middot; E interact &middot; F slap/pounce &middot; T sniff</div>
+
+<!-- Fight UI -->
+<div id="fight" class="hidden">
+  <h2 id="fight-title">Paw fight</h2>
+  <p id="fight-sub">Wear them down: spam F or click to slap</p>
+  <div class="bars">
+    <div><label>You</label><div class="bar"><div id="php"></div></div></div>
+    <div><label id="enemy-name">Rival</label><div class="bar"><div id="ehp"></div></div></div>
+  </div>
+  <p class="fight-hint">Meow-offs: spam M instead</p>
+</div>
+<div id="taunt" class="hidden"><b id="taunt-cry">MEOW!</b><span id="taunt-tr">(translation: ...)</span></div>
+<div id="paw" class="hidden"><div class="paw-pad"></div><div class="toe t1"></div><div class="toe t2"></div><div class="toe t3"></div></div>
+
+<!-- Start screen -->
+<div id="start">
+  <div class="card">
+    <h1>Pookie Catventure: Hallow Eve</h1>
+    <p class="story">After surviving the spooky Japanese town, you permanently turned into a cat. There is no fixing this. It is Halloween season now, the fog is thick, and the town leans crooked.</p>
+    <p>Roam as a small black cat. Find <b>10 catnip</b> and <b>10 tuna</b> hidden in the gloom.<br>
+    Rival cats and dogs roam the streets. Some want paw slaps, some want a meow-off.<br>
+    Mice skitter in the dark — tiptoe close and pounce for a snack that heals you.<br>
+    Biscuit, the wobbly golden retriever, is hiding somewhere far from the square. He is holding a sealed letter for Hajar. Follow the pumpkin lights.<br>
+    And in the far south-east, Gormley the Dumpster King guards a golden tuna worth 3.</p>
+    <p class="controls">WASD move &middot; SHIFT sneak &middot; mouse look &middot; SPACE jump (climb crates, fences and roofs) &middot; M meow &middot; E pick up / talk &middot; F paw slap / pounce &middot; T sniff for trails</p>
+    <button id="play">Begin</button>
+  </div>
+</div>
+
+<!-- Letter modal: sealed -> click heart wax -> pixel letter -->
+<div id="letter-wrap" class="hidden">
+  <div id="letter-backdrop"></div>
+
+  <div id="sealed">
+    <div class="env"><span class="pad"></span><span class="toe t1"></span><span class="toe t2"></span><span class="toe t3"></span></div>
+    <p class="sealed-text">A sealed letter, smelling faintly of pumpkin.<br>For Hajar. From Biscuit's jaws.</p>
+    <button id="wax" aria-label="Break the heart seal"><i class="px-heart"></i><span>K</span></button>
+    <p class="sealed-hint">click the heart seal to open</p>
+  </div>
+
+  <article id="letter" class="hidden" role="dialog" aria-label="A letter for Hajar">
+    <div class="hearts-row" aria-hidden="true">♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥</div>
+    <div class="letter-body">
+      <svg class="big-heart" viewBox="0 0 100 90" aria-hidden="true"><path d="M50 82 C10 55 5 25 25 15 C38 9 50 20 50 30 C50 20 62 9 75 15 C95 25 90 55 50 82 Z" fill="none" stroke="#ef9aa8" stroke-width="3"/></svg>
+      <h2>To MY DEAREST pookie squishball Hajar &lt;3</h2>
+      <p>It feels like my life only started since meeting you, and in the last 6 months that we've been together I've known nothing but happiness.</p>
+      <p>I can replay the first time we met endlessly in my head, I couldn't ever imagine having that kind of connection with someone right from the beginning. Every time I see you I can't help but smile like a dumbass, you make me so incredibly happy baby.</p>
+      <p>You only become more and more enchanting to me as time passes (I genuinely have SUCH a big crush on you), your personality, your humor and timing with jokes, how observant you are and how caring you are. You're incredibly addicting and you take up a loooottt of space in my heart, the amount of love I feel for you genuinely can't be put into words (at least not in english).</p>
+      <p>I love how we're both able to completely drop the mask with each other and just be ourselves, I used to have a lot of negative thoughts but with you they rarely pop up in my head anymore, you've had so much good influence on me and I can only hope I do the same for you.</p>
+      <p>The only thing I wish for is for us to go through life together and always be there for each other (and afterwards we live onwards as worms or skeletons or something).</p>
+      <p>You're such a beautiful person with such a sweet soul, it's impossible not to be positive and peaceful around you. I'm so happy this adorable doofus pulled up out of nowhere into my life, I love you so much baby &lt;3 and I'll always take care of you and love you endlessly &lt;3</p>
+      <p class="sign">- from your doofus Karol with a K</p>
+    </div>
+    <div class="hearts-row" aria-hidden="true">♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥ ♥</div>
+    <button id="close-letter">Fold it away</button>
+  </article>
+</div>
+
+<!-- Win screen -->
+<div id="win" class="hidden">
+  <div class="card">
+    <h1>Well fed under a crooked moon</h1>
+    <p>You collected 10 catnip and 10 tuna.<br>The fog lifts a little. Nap time.</p>
+    <button onclick="location.reload()">Play again</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+<script>
+/* Boot check: runs even if game.js above throws. Tells us WHY Begin is dead. */
+(function () {
+  setTimeout(function () {
+    var err = document.getElementById('err');
+    if (typeof THREE === 'undefined') {
+      err.classList.remove('hidden');
+      err.textContent = '3D engine failed to load (unpkg.com unreachable?). Connect to the internet and reload. If it persists, open F12 Console and send me the red lines.';
+      return;
+    }
+    if (!window.__gameBooted) {
+      err.classList.remove('hidden');
+      err.textContent = 'Game script crashed during startup. Press F12, open Console, screenshot the red error and send it to me.';
+      // Last-resort Begin: at least hide the menu so a running canvas (if any) is visible.
+      var play = document.getElementById('play');
+      if (play && !play.__fallback) {
+        play.__fallback = true;
+        play.addEventListener('click', function () {
+          document.getElementById('start').classList.add('hidden');
+        });
+      }
+    }
+  }, 800);
+})();
+</script>
+</body>
+</html>
